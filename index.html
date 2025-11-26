@@ -32,11 +32,11 @@
         z-index: 1;
     }
 
-    /* --- PANEL DE TÍTULO (Escritorio por defecto) --- */
+    /* --- PANEL DE TÍTULO --- */
     .title-box {
         position: absolute;
         top: 10px;
-        left: 50px; /* Posición escritorio */
+        left: 10px; 
         z-index: 1000;
         background: white;
         padding: 15px;
@@ -53,26 +53,34 @@
         font-weight: 700;
     }
 
-    /* --- POSICIONAMIENTO CONTROLES LEAFLET (Zoom y Regla) --- */
-    /* Escritorio: Debajo de la caja de título, alineado a la izquierda */
+    /* --- POSICIONAMIENTO CONTROLES LEAFLET --- */
+    
+    /* ARRIBA IZQUIERDA (Zoom y Regla) */
     .leaflet-top.leaflet-left {
         top: 140px; 
         left: 10px; 
         transition: all 0.3s ease;
     }
+
+    /* ABAJO IZQUIERDA (Minimapa) */
+    .leaflet-bottom.leaflet-left {
+        left: 10px; 
+        bottom: 20px;
+        transition: all 0.3s ease;
+    }
     
-    /* Capas (Derecha): También bajamos un poco para consistencia */
+    /* ARRIBA DERECHA (Capas) */
     .leaflet-top.leaflet-right {
-        top: 10px; /* En escritorio se mantiene arriba a la derecha */
+        top: 10px;
     }
 
     /* --- MEDIA QUERIES: AJUSTES PARA MÓVIL (< 600px) --- */
     @media (max-width: 600px) {
-        /* 1. Título centrado y ocupando ancho */
+        /* 1. Título centrado */
         .title-box {
             left: 50% !important;
             transform: translateX(-50%);
-            width: 92%; /* Casi todo el ancho */
+            width: 92%; 
             top: 10px;
             padding: 10px;
             display: flex;
@@ -85,24 +93,23 @@
             margin-bottom: 8px;
         }
 
-        /* 2. Empujar los controles del mapa (Zoom/Regla) más abajo */
+        /* 2. Iconos Arriba Izquierda pegados al borde */
         .leaflet-top.leaflet-left {
-            top: 130px !important; /* Suficiente espacio para no chocar con el título */
-            left: 0 !important;
+            top: 130px !important; 
+            left: 0 !important; 
         }
 
-        /* 3. Mover el control de capas (derecha) también hacia abajo para que no tape el título */
+        /* 3. Minimapa Abajo Izquierda pegado al borde */
+        .leaflet-bottom.leaflet-left {
+            left: 0 !important;
+            bottom: 0 !important;
+        }
+
+        /* 4. Capas abajo para no tapar título */
         .leaflet-top.leaflet-right {
             top: 130px !important;
         }
-        
-        /* Ocultar texto largo en el botón */
-        .btn-text-long { display: none; }
-        .btn-text-short { display: inline; }
     }
-
-    /* Texto del botón para escritorio (por defecto) */
-    .btn-text-short { display: none; }
 
     /* Botón de Localización */
     .locate-prominent-btn {
@@ -153,7 +160,7 @@
     .leaflet-control-layers-expanded {
         padding: 10px;
         font-size: 14px;
-        max-height: 65vh; /* Menos altura en móvil para evitar overflow */
+        max-height: 65vh; 
         overflow-y: auto;
         min-width: 200px;
     }
@@ -165,7 +172,7 @@
     }
     .leaflet-control-layers-selector {
         margin: 0 8px 0 0 !important;
-        transform: scale(1.2); /* Checkbox más grande para dedos */
+        transform: scale(1.2); 
     }
     
     /* Colores y Estilos Específicos */
@@ -201,9 +208,7 @@
   <div class="title-box">
       <h1>Visor Faixas</h1>
       <button id="btnLocateMain" class="locate-prominent-btn">
-        <i class="fa-solid fa-location-crosshairs"></i> 
-        <span class="btn-text-long">Centrar en mi ubicación</span>
-        <span class="btn-text-short">Centrar</span>
+        <i class="fa-solid fa-location-crosshairs"></i> Centrar
       </button>
   </div>
 
@@ -240,7 +245,7 @@
     // CONFIGURACIÓN MAPA
     var galiciaBounds = L.latLngBounds(L.latLng(41.8, -9.6), L.latLng(43.9, -6.2));
     var map = L.map('map', {
-        zoomControl: false, // Desactivado por defecto para posicionarlo manualmente
+        zoomControl: false, 
         maxBounds: galiciaBounds.pad(0.2),
         minZoom: 7
     }).setView([42.88, -8.54], 8);
@@ -293,8 +298,14 @@
     var nucleos = L.esri.dynamicMapLayer({ url: "https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer", layers: [1], opacity: 0.5, zIndex: 390 });
     var catastro = L.tileLayer.wms("http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx", { layers: "CP.CadastralParcel", format: 'image/png', transparent: true, zIndex: 380, minZoom: 14 });
 
-    // MINIMAPA
-    new L.Control.MiniMap(new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), { toggleDisplay: true, width: 100, height: 100 }).addTo(map);
+    // MINIMAPA (Posición: bottomleft)
+    new L.Control.MiniMap(new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), { 
+        toggleDisplay: true, 
+        minimized: false,
+        position: 'bottomleft', // Se alinea con CSS
+        width: 120, 
+        height: 120 
+    }).addTo(map);
 
     // CONTROL CAPAS
     var baseMaps = { "🛰️ Satélite": pnoa, "🗺️ Mapa": osm };
@@ -335,13 +346,23 @@
     });
     map.on('locationfound', e => {
         btn.innerHTML = '<i class="fa-solid fa-check"></i> OK';
-        setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> <span class="btn-text-long">Centrar en mi ubicación</span><span class="btn-text-short">Centrar</span>', 2000);
-        L.circle(e.latlng, e.accuracy/2).addTo(map);
-        L.circleMarker(e.latlng, {radius:6, color:'white', fillColor:'#007bff', fillOpacity:1}).addTo(map);
+        setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Centrar', 2000);
+        
+        // Círculo de precisión SUTIL (Fix: opacidad baja para ver debajo)
+        L.circle(e.latlng, { 
+            radius: e.accuracy, 
+            color: '#007bff', 
+            weight: 1, 
+            fillColor: '#007bff', 
+            fillOpacity: 0.1 // Muy transparente
+        }).addTo(map).bindPopup("Precisión aprox: " + Math.round(e.accuracy) + "m");
+        
+        // Marcador
+        L.circleMarker(e.latlng, {radius:6, color:'white', weight:2, fillColor:'#007bff', fillOpacity:1}).addTo(map);
     });
     map.on('locationerror', () => {
         alert("No se pudo obtener la ubicación.");
-        btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> <span class="btn-text-long">Centrar en mi ubicación</span><span class="btn-text-short">Centrar</span>';
+        btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Centrar';
     });
 
     // IA & CONTROLES FLOTANTES
