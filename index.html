@@ -628,21 +628,66 @@
     var locateCtrl = new LocateControl();
     map.addControl(locateCtrl);
 
+    // Globals for geolocation layers to manage visibility
+    var locationAccuracyCircle = null;
+    var locationMarker = null;
+
     map.on('locationfound', e => {
         if(locateCtrl._btn) {
              locateCtrl._btn.innerHTML = '<i class="fa-solid fa-check" style="color:#28a745;"></i>';
              setTimeout(() => { locateCtrl._btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>'; }, 2000);
         }
-        L.circle(e.latlng, { radius: e.accuracy, color: '#007bff', weight: 1, fillColor: '#007bff', fillOpacity: 0.15 })
-            .addTo(map)
-            .bindPopup("Precisión aprox: " + Math.round(e.accuracy) + "m");
-        L.circleMarker(e.latlng, {radius:6, color:'white', weight:3, fillColor:'#007bff', fillOpacity:1}).addTo(map);
+
+        // Clean up old markers
+        if (locationAccuracyCircle) map.removeLayer(locationAccuracyCircle);
+        if (locationMarker) map.removeLayer(locationMarker);
+
+        // 1. Accuracy Circle with very high transparency
+        locationAccuracyCircle = L.circle(e.latlng, { 
+            radius: e.accuracy, 
+            color: '#007bff', 
+            weight: 1, 
+            opacity: 0.2, // very transparent border
+            fillColor: '#007bff', 
+            fillOpacity: 0.05 // 5% opacity (very transparent)
+        }).bindPopup("Precisión aprox: " + Math.round(e.accuracy) + "m");
+
+        // 2. Exact location marker
+        locationMarker = L.circleMarker(e.latlng, {
+            radius: 6, 
+            color: 'white', 
+            weight: 3, 
+            fillColor: '#007bff', 
+            fillOpacity: 1
+        }).addTo(map);
+
+        // 3. Decide whether to show the accuracy circle based on current zoom
+        toggleAccuracyCircle();
     });
 
     map.on('locationerror', (e) => {
         console.warn("No se pudo obtener la ubicación.", e);
         if(locateCtrl._btn) locateCtrl._btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
     });
+
+    // Listener to hide accuracy circle on high zoom levels
+    map.on('zoomend', toggleAccuracyCircle);
+
+    function toggleAccuracyCircle() {
+        if (!locationAccuracyCircle) return;
+        
+        var z = map.getZoom();
+        // Hide completely if zoom is 14 or higher
+        if (z >= 14) {
+            if (map.hasLayer(locationAccuracyCircle)) {
+                map.removeLayer(locationAccuracyCircle);
+            }
+        } else {
+            if (!map.hasLayer(locationAccuracyCircle)) {
+                map.addLayer(locationAccuracyCircle);
+            }
+        }
+    }
     
     // --- ADMIN SEARCH LOGIC ---
     const adminUrl = 'https://ideg.xunta.gal/servizos/rest/services/LimitesAdministrativos/LimitesAdministrativos/MapServer';
