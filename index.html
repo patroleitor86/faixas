@@ -8,15 +8,17 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
-  <!-- FontAwesome para iconos -->
+  <!-- Leaflet Draw CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+
+  <!-- FontAwesome for Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Plugins -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.css" />
 
   <style>
-    /* Reset básico */
+    /* --- RESET & BASIC LAYOUT --- */
     body, html { 
         height: 100%; 
         width: 100%; 
@@ -24,238 +26,551 @@
         padding: 0; 
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         overflow: hidden;
+        background: #f0f0f0;
     }
 
     #map { 
         width: 100%; 
         height: 100%; 
         z-index: 1;
+        background: #ddd;
     }
 
-    /* --- PANEL DE TÍTULO --- */
-    .title-box {
-        position: absolute;
-        top: 10px;
-        left: 10px; 
-        z-index: 1000;
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        min-width: 260px;
-        transition: all 0.3s ease;
-    }
-
-    .title-box h1 {
-        margin: 0 0 10px 0;
-        font-size: 1.2rem;
-        color: #333;
+    /* --- ESTILO ETIQUETAS CONCELLO (MEJORADO) --- */
+    .concello-label {
+        font-size: 11px;
         font-weight: 700;
+        color: #004085; /* Azul oscuro para contraste */
+        text-shadow: 
+            0 0 2px #ffffff,
+            0 0 4px #ffffff,
+            0 0 4px #ffffff;
+        white-space: nowrap;
+        pointer-events: none; /* Permite hacer clic a través del texto */
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
-    /* --- POSICIONAMIENTO CONTROLES --- */
-    .leaflet-top.leaflet-left {
-        top: 140px; 
-        left: 10px; 
-        transition: all 0.3s ease;
-    }
-
-    .leaflet-bottom.leaflet-left {
-        left: 10px; 
-        bottom: 20px;
-        transition: all 0.3s ease;
+    /* --- COORDINATES BOX --- */
+    .coords-box {
+        position: absolute;
+        bottom: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 6px 15px;
+        border-radius: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        font-size: 11px;
+        color: #333;
+        font-weight: 600;
+        white-space: nowrap;
+        pointer-events: none;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(0,0,0,0.1);
+        display: flex;
+        gap: 15px;
+        transition: bottom 0.3s ease;
     }
     
-    .leaflet-top.leaflet-right {
-        top: 10px;
+    /* --- CUSTOM MEASURE TOOLBAR --- */
+    .measure-toolbar {
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin-top: 10px; 
+        border: 2px solid rgba(0,0,0,0.2);
+        background-clip: padding-box;
     }
 
-    /* --- MEDIA QUERIES MÓVIL --- */
-    @media (max-width: 600px) {
-        .title-box {
-            left: 50% !important;
-            transform: translateX(-50%);
-            width: 92%; 
-            top: 10px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .title-box h1 {
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-        }
-
-        .leaflet-top.leaflet-left {
-            top: 130px !important; 
-            left: 0 !important; 
-        }
-
-        .leaflet-bottom.leaflet-left {
-            left: 0 !important;
-            bottom: 0 !important;
-        }
-
-        .leaflet-top.leaflet-right {
-            top: 130px !important; /* Bajamos controles derechos en móvil */
-        }
-        
-        .leaflet-control-author {
-            font-size: 9px !important;
-            padding: 3px 6px !important;
-            margin-top: 5px !important;
-            margin-right: 5px !important;
-            opacity: 0.8;
-        }
-    }
-
-    /* Botón de Localización */
-    .locate-prominent-btn {
+    .measure-btn {
+        width: 30px;
+        height: 30px;
+        background: white;
+        border: none;
+        border-bottom: 1px solid #ccc;
+        cursor: pointer;
+        font-size: 14px;
+        color: #444;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        width: 100%;
-        padding: 10px 15px;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s, transform 0.1s;
-        box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+        transition: background 0.2s;
+        padding: 0;
     }
-    .locate-prominent-btn:hover { background: #0056b3; }
-    .locate-prominent-btn:active { transform: scale(0.98); }
-    .locate-prominent-btn.error { background: #dc3545; }
-    .locate-prominent-btn.success { background: #28a745; }
+    .measure-btn:last-child { border-bottom: none; }
+    .measure-btn:hover { background: #f4f4f4; color: #000; }
+    .measure-btn.active { background: #e6f2ff; color: #007bff; }
 
-    /* Botones Flotantes */
-    .floating-btn {
+    /* --- LOCATE BUTTON --- */
+    .leaflet-control-locate {
         background-color: #fff;
-        width: 40px;
-        height: 40px;
-        line-height: 40px;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
         text-align: center;
-        border-radius: 50%;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        border-radius: 2px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.65);
         cursor: pointer;
         color: #333;
-        font-size: 18px;
+        font-size: 16px;
+        display: block;
+        margin-bottom: 5px;
+    }
+    .leaflet-control-locate:hover { background-color: #f4f4f4; }
+
+    /* --- ADMIN SEARCH (RESPONSIVE) --- */
+    .admin-search-container {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: auto;
+        max-width: 95%;
+    }
+
+    .admin-search-toggle {
+        display: none;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        cursor: pointer;
+        font-size: 13px;
+        z-index: 2001;
+        transition: background 0.2s, transform 0.1s;
+        align-items: center;
+        gap: 8px;
+    }
+    .admin-search-toggle:hover { background-color: #0056b3; }
+    .admin-search-toggle:active { transform: scale(0.98); }
+
+    .admin-search-panel {
+        background: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .admin-search-group {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .admin-search-panel select {
+        padding: 5px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 13px;
+        background-color: #fff;
+        min-width: 140px;
+        cursor: pointer;
+        color: #333;
+        outline: none;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .admin-search-panel select:focus { border-color: #007bff; }
+    .admin-search-panel select:disabled { background-color: #f5f5f5; color: #999; cursor: not-allowed; }
+    
+    .admin-search-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-left: 2px;
+    }
+
+    .admin-search-confirm {
+        display: none;
         margin-top: 10px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 6px;
+        width: 100%;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* --- RESPONSIVE ADJUSTMENTS --- */
+    @media (max-width: 768px) {
+        .admin-search-container {
+            top: 10px;
+            width: auto;
+        }
+
+        .admin-search-toggle {
+            display: flex;
+        }
+
+        .admin-search-panel {
+            display: none;
+            flex-direction: column;
+            align-items: stretch;
+            width: 260px;
+            margin-top: 10px;
+            padding: 15px;
+            border: 1px solid #eee;
+        }
+
+        .admin-search-panel.active {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .admin-search-toggle.hidden {
+            display: none;
+        }
+
+        .admin-search-confirm {
+            display: block;
+        }
+
+        .leaflet-top.leaflet-left { top: 10px !important; left: 0 !important; }
+        .leaflet-bottom.leaflet-left { left: 0 !important; bottom: 45px !important; }
+        .leaflet-top.leaflet-right { top: 10px !important; right: 0 !important; }
+        
+        .coords-box {
+            bottom: 15px;
+            font-size: 9px;
+            width: 90%;
+            justify-content: center;
+            padding: 5px 10px;
+            gap: 10px;
+        }
+        
+        .measure-result-box { 
+            top: auto !important; 
+            bottom: 90px;
+            left: 10px;
+            right: 10px;
+            width: auto;
+        }
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- MEASURE RESULT BOX --- */
+    .measure-result-box {
+        position: absolute;
+        top: 140px; 
+        left: 50px;
+        z-index: 1000;
+        background: white;
+        padding: 12px 18px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        display: none; 
+        min-width: 200px;
+        font-family: sans-serif;
+        border-left: 4px solid #007bff;
+        animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+    .measure-result-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #888;
+        margin-bottom: 4px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .measure-result-value {
+        font-size: 22px;
+        font-weight: 800;
+        color: #333;
+    }
+
+    .measure-result-close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        cursor: pointer;
+        color: #bbb;
+        font-size: 16px;
+        transition: color 0.2s;
+    }
+    .measure-result-close:hover { color: #333; }
+
+    /* --- LEAFLET CONTROL OVERRIDES --- */
+    .leaflet-bar { box-shadow: 0 1px 5px rgba(0,0,0,0.3) !important; border: none !important; }
+    .leaflet-bar a { border-bottom: 1px solid #eee !important; color: #444 !important; }
+    .leaflet-bar a:hover { background-color: #f8f8f8 !important; color: #000 !important; }
+
+    /* --- FLOATING AI BUTTON --- */
+    .floating-btn {
+        background-color: #fff;
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        text-align: center;
+        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        cursor: pointer;
+        color: #333;
+        font-size: 20px;
+        margin-top: 12px;
         display: block;
         text-decoration: none;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
+    .floating-btn:hover { transform: scale(1.05); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+    
     .ai-btn {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white !important;
-        border: 2px solid white;
+        border: 2px solid rgba(255,255,255,0.8);
     }
 
-    /* Firma del Autor */
+    /* --- AUTHOR CONTROL --- */
     .leaflet-control-author {
         background: rgba(255, 255, 255, 0.9);
-        padding: 5px 10px;
-        border-radius: 15px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         font-size: 11px;
         font-weight: 600;
-        color: #666;
+        color: #555;
         margin-top: 10px !important;
         margin-right: 10px !important;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(4px);
         cursor: default;
         clear: right;
         pointer-events: auto;
     }
 
-    /* --- CORRECCIÓN DE ESTILOS PARA EL CONTROL DE CAPAS --- */
-    .leaflet-control-layers-expanded {
-        padding: 12px; /* Un poco más de padding */
-        font-size: 14px;
-        max-height: 70vh;
-        overflow-y: auto;
-        min-width: 260px; /* CAMBIO: Más ancho para evitar que el texto se corte */
+    /* --- POPUP STYLES --- */
+    .gmaps-link {
+        display: block;
+        background-color: #28a745;
+        color: #ffffff !important;
+        text-align: center;
+        padding: 10px 12px;
+        border-radius: 6px;
+        text-decoration: none !important;
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
+        transition: background-color 0.2s;
     }
-    
-    /* Asegura alineación perfecta vertical entre checkbox y texto */
-    .leaflet-control-layers label {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start;
-        margin-bottom: 8px !important; /* Más separación entre items */
-        width: 100%;
-    }
-    
-    .leaflet-control-layers-selector {
-        margin: 0 10px 0 0 !important; /* Espacio entre checkbox y texto */
-        transform: scale(1.3); /* Checkbox un poco más grande */
-        flex-shrink: 0; /* Evita que el checkbox se aplaste */
-        cursor: pointer;
-    }
-    
-    .leaflet-control-layers-selector + span {
-        display: inline-block;
-        vertical-align: middle;
-        line-height: 1.2;
-    }
-    /* ----------------------------------------------------- */
-    
-    .violet-wms { filter: invert(19%) sepia(96%) saturate(4207%) hue-rotate(277deg) brightness(91%) contrast(109%); }
-    .layer-label { display: flex; align-items: center; gap: 8px; }
-    .color-box { width: 14px; height: 14px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-    
-    .info-popup-table td { padding: 3px 8px 3px 0; border-bottom: 1px solid #eee; font-size: 13px; }
-    .info-popup-header { font-weight: bold; color: #007bff; margin-bottom: 5px; border-bottom: 2px solid #007bff; padding-bottom: 3px; }
-    
-    .leaflet-control-measure { border: 2px solid rgba(0,0,0,0.2); box-shadow: none; }
-    
-    /* Modal IA */
-    .ai-modal { display: none; position: fixed; bottom: 80px; right: 10px; width: 350px; max-width: 90vw; background: white; z-index: 2000; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); flex-direction: column; border: 1px solid #e0e0e0; font-size: 14px; }
-    .ai-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; display: flex; justify-content: space-between; font-weight: bold; }
-    .ai-content { height: 300px; overflow-y: auto; padding: 15px; background: #f9f9f9; display: flex; flex-direction: column; gap: 10px; }
-    .message { padding: 8px 12px; border-radius: 8px; max-width: 85%; line-height: 1.4; }
-    .msg-user { background: #e3e8ff; align-self: flex-end; color: #333; }
-    .msg-ai { background: white; align-self: flex-start; border: 1px solid #ddd; }
-    .ai-input-area { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 8px; background: white; }
-    .ai-input { flex: 1; border: 1px solid #ddd; border-radius: 20px; padding: 8px; outline: none; }
-    .ai-send { background: #764ba2; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .suggestions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
-    .chip { background: #eee; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; cursor: pointer; }
+    .gmaps-link:hover { background-color: #218838; }
 
+    .info-popup-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .info-popup-table td { padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; vertical-align: top; color: #444; }
+    .info-popup-table td:first-child { font-weight: 600; color: #777; width: 40%; padding-right: 8px; }
+    .info-popup-header { 
+        font-weight: 700; 
+        color: #007bff; 
+        margin-bottom: 8px; 
+        border-bottom: 2px solid #007bff; 
+        padding-bottom: 4px; 
+        font-size: 14px; 
+        margin-top: 12px; 
+    }
+    .loading-indicator { font-size: 12px; color: #888; font-style: italic; padding: 10px 0; text-align: center; }
+
+    /* --- AI MODAL --- */
+    .ai-modal { 
+        display: none; 
+        position: fixed; 
+        bottom: 80px; 
+        right: 10px; 
+        width: 360px; 
+        max-width: 92vw; 
+        height: 500px;
+        max-height: 60vh;
+        background: white; 
+        z-index: 3000; 
+        border-radius: 16px; 
+        box-shadow: 0 10px 40px rgba(0,0,0,0.25); 
+        flex-direction: column; 
+        border: 1px solid rgba(0,0,0,0.1); 
+        font-size: 14px; 
+        overflow: hidden;
+        animation: popUp 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    @keyframes popUp { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+    .ai-header { 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+        color: white; 
+        padding: 15px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center;
+        font-weight: 600; 
+        font-size: 15px;
+    }
+    
+    .ai-content { 
+        flex: 1; 
+        overflow-y: auto; 
+        padding: 15px; 
+        background: #f8f9fa; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px; 
+    }
+    
+    .message { 
+        padding: 10px 14px; 
+        border-radius: 12px; 
+        max-width: 85%; 
+        line-height: 1.5; 
+        font-size: 13px;
+        position: relative;
+    }
+    .msg-user { 
+        background: #e3e8ff; 
+        align-self: flex-end; 
+        color: #333; 
+        border-bottom-right-radius: 2px;
+    }
+    .msg-ai { 
+        background: white; 
+        align-self: flex-start; 
+        border: 1px solid #eee; 
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .ai-input-area { 
+        padding: 12px; 
+        border-top: 1px solid #eee; 
+        display: flex; 
+        gap: 10px; 
+        background: white; 
+    }
+    .ai-input { 
+        flex: 1; 
+        border: 1px solid #ddd; 
+        border-radius: 24px; 
+        padding: 10px 15px; 
+        outline: none; 
+        font-size: 13px;
+        transition: border-color 0.2s;
+    }
+    .ai-input:focus { border-color: #764ba2; }
+    
+    .ai-send { 
+        background: #764ba2; 
+        color: white; 
+        border: none; 
+        width: 38px; 
+        height: 38px; 
+        border-radius: 50%; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        cursor: pointer; 
+        transition: background 0.2s;
+    }
+    .ai-send:hover { background: #5e3b83; }
+    .ai-send:disabled { background: #ccc; cursor: default; }
+
+    .suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .chip { 
+        background: #f1f3f5; 
+        color: #555;
+        font-size: 11px; 
+        padding: 6px 10px; 
+        border-radius: 16px; 
+        cursor: pointer; 
+        border: 1px solid #e9ecef;
+        transition: all 0.2s;
+    }
+    .chip:hover { background: #e9ecef; border-color: #dee2e6; color: #333; }
+
+    .color-box {
+        display: inline-block; width: 12px; height: 12px; margin-right: 5px; vertical-align: middle; border-radius: 2px;
+    }
+    .layer-label { font-size: 13px; }
   </style>
 </head>
 <body>
 
-  <!-- Panel de Título -->
-  <div class="title-box">
-      <h1>Visor Faixas</h1>
-      <button id="btnLocateMain" class="locate-prominent-btn">
-        <i class="fa-solid fa-location-crosshairs"></i> Centrar
+  <!-- ADMIN SEARCH (Responsive) -->
+  <div class="admin-search-container">
+      <button id="adminSearchToggle" class="admin-search-toggle">
+          <i class="fa-solid fa-magnifying-glass"></i> Buscar Zona
       </button>
+      
+      <div id="adminSearchPanel" class="admin-search-panel">
+          <div class="admin-search-group">
+              <span class="admin-search-label">Provincia</span>
+              <select id="selProvincia"><option value="">Cargando...</option></select>
+          </div>
+          <div class="admin-search-group">
+              <span class="admin-search-label">Concello</span>
+              <select id="selConcello" disabled><option value="">Seleccionar...</option></select>
+          </div>
+          <div class="admin-search-group">
+              <span class="admin-search-label">Parroquia</span>
+              <select id="selParroquia" disabled><option value="">Seleccionar...</option></select>
+          </div>
+          <button id="adminSearchConfirm" class="admin-search-confirm">
+              <i class="fa-solid fa-check"></i> Ver en mapa
+          </button>
+      </div>
   </div>
 
-  <!-- Modal IA -->
+  <!-- Measure Result Box -->
+  <div id="measureResult" class="measure-result-box">
+      <span class="measure-result-close" onclick="clearMeasurement()"><i class="fa-solid fa-xmark"></i></span>
+      <div class="measure-result-title" id="measureType">Resultado</div>
+      <div class="measure-result-value" id="measureValue">0 m</div>
+  </div>
+
+  <!-- Coordinates Box -->
+  <div id="coordsBox" class="coords-box">
+      <span id="geoCoords">Lat: -- Lon: --</span>
+      <span id="utmCoords" style="border-left: 1px solid #ddd; padding-left: 15px;">UTM 29T: -- --</span>
+  </div>
+
+  <!-- AI Modal -->
   <div id="aiModal" class="ai-modal">
       <div class="ai-header">
-          <span><i class="fa-solid fa-robot"></i> Asistente Normativa ✨</span>
-          <span style="cursor:pointer" onclick="toggleAI()"><i class="fa-solid fa-xmark"></i></span>
+          <span><i class="fa-solid fa-robot"></i> Asistente Normativa</span>
+          <span style="cursor:pointer; font-size:18px;" onclick="toggleAI()"><i class="fa-solid fa-xmark"></i></span>
       </div>
       <div class="ai-content" id="chatContainer">
           <div class="message msg-ai">
-              Hola, soy tu asistente experto en la Ley de Prevención de Incendios de Galicia.
+              Hola, soy tu asistente experto en la Ley de Prevención de Incendios de Galicia (Ley 3/2007).
               <div class="suggestions">
                   <span class="chip" onclick="askPreset('Distancia eucaliptos a viviendas')">Distancia eucaliptos</span>
                   <span class="chip" onclick="askPreset('¿Qué se puede plantar en la faja de 50m?')">Faja 50m</span>
+                  <span class="chip" onclick="askPreset('Desbroce obligatorio')">Plazos desbroce</span>
               </div>
           </div>
       </div>
       <div class="ai-input-area">
-          <input type="text" id="userQuery" class="ai-input" placeholder="Duda..." onkeypress="handleEnter(event)">
+          <input type="text" id="userQuery" class="ai-input" placeholder="Escribe tu duda aquí..." onkeypress="handleEnter(event)">
           <button id="sendBtn" class="ai-send" onclick="callGemini()"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
   </div>
@@ -264,176 +579,826 @@
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-measure@3.1.0/dist/leaflet-measure.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+  <!-- GeometryUtil para mediciones robustas -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-geometryutil@0.10.3/src/leaflet.geometryutil.js"></script>
 
   <script>
-    // CONFIGURACIÓN MAPA
+    // --- API & GLOBALS ---
+    const apiKey = "";
+    let isGenerating = false;
+
+    // --- MAP CONFIGURATION ---
     var galiciaBounds = L.latLngBounds(L.latLng(41.8, -9.6), L.latLng(43.9, -6.2));
     var map = L.map('map', {
         zoomControl: false, 
         maxBounds: galiciaBounds.pad(0.2),
-        minZoom: 7
+        minZoom: 6 // Aumentado a 6 para evitar ver demasiado océano/Portugal
     }).setView([42.88, -8.54], 8);
 
-    // Controles (Zoom y Regla)
     L.control.zoom({ position: 'topleft' }).addTo(map);
-    
-    var measureControl = new L.Control.Measure({
-        position: 'topleft',
-        primaryLengthUnit: 'meters', secondaryLengthUnit: 'kilometers',
-        primaryAreaUnit: 'sqmeters', activeColor: '#ff0000',
-        localization: 'es'
-    });
-    measureControl.addTo(map);
 
-    // TRADUCCIÓN REGLA
-    function translateMeasure() {
-        const trans = {
-            'Measure distances and areas': 'Medir distancias y áreas',
-            'Create a new measurement': 'Crear nueva medición',
-            'Finish measurement': 'Terminar', 'Delete last point': 'Borrar punto', 'Cancel': 'Cancelar',
-            'Point location': 'Ubicación', 'Linear measurement': 'Longitud', 'Area measurement': 'Área',
-            'Path distance': 'Distancia', 'Area': 'Superficie', 'Perimeter': 'Perímetro'
-        };
-        const ctrl = document.querySelector('.leaflet-control-measure');
-        if(ctrl) {
-            const btn = ctrl.querySelector('.leaflet-control-measure-toggle');
-            if(btn) btn.title = "Medir";
-            ctrl.querySelectorAll('*').forEach(el => {
-                if(trans[el.innerText]) el.innerText = trans[el.innerText];
-                if(trans[el.title]) el.title = trans[el.title];
-            });
-        }
-    }
-    new MutationObserver(translateMeasure).observe(document.body, { childList: true, subtree: true });
-
-    // PANE ETIQUETAS
-    map.createPane('labelsPane');
-    map.getPane('labelsPane').style.zIndex = 650;
-    map.getPane('labelsPane').style.pointerEvents = 'none';
-
-    // CAPAS
-    var pnoa = L.tileLayer.wms("https://www.ign.es/wms-inspire/pnoa-ma", { layers: "OI.OrthoimageCoverage", format: "image/jpeg", attribution: "PNOA", maxZoom: 20 }).addTo(map);
-    var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "OSM" });
-    
-    var limites = L.tileLayer.wms("https://www.ign.es/wms-inspire/unidades-administrativas", { layers: 'AU.AdministrativeBoundary', format: 'image/png', transparent: true, zIndex: 1000, className: 'violet-wms' }).addTo(map);
-    var poblaciones = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { pane: 'labelsPane', subdomains: 'abcd', maxZoom: 20 }).addTo(map);
-    
-    var faixa50m = L.esri.dynamicMapLayer({ url: "https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer", layers: [2], opacity: 0.65, zIndex: 400 }).addTo(map);
-    var nucleos = L.esri.dynamicMapLayer({ url: "https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer", layers: [1], opacity: 0.5, zIndex: 390 });
-    var catastro = L.tileLayer.wms("http://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx", { layers: "CP.CadastralParcel", format: 'image/png', transparent: true, zIndex: 380, minZoom: 14 });
-
-    // MINIMAPA
-    new L.Control.MiniMap(new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), { 
-        toggleDisplay: true, 
-        minimized: false,
-        position: 'bottomleft', 
-        width: 120, 
-        height: 120 
-    }).addTo(map);
-
-    // --- CAMBIO: FIRMA DEL AUTOR (Antes de las capas para que salga arriba) ---
-    var AuthorControl = L.Control.extend({
-        options: { position: 'topright' },
+    // --- GEOLOCATION CONTROL ---
+    var LocateControl = L.Control.extend({
+        options: { position: 'topleft' },
         onAdd: function(map) {
-            var div = L.DomUtil.create('div', 'leaflet-control-author');
-            div.innerHTML = 'Creado por Efrén Santín';
-            return div;
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            var btn = L.DomUtil.create('a', 'leaflet-control-locate', container);
+            btn.href = "#";
+            btn.title = "Centrar en mi ubicación";
+            btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+            
+            L.DomEvent.on(btn, 'click', function(e) {
+                L.DomEvent.stop(e);
+                // Safe check for protocol, using console warn instead of alert
+                if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                    console.warn("La geolocalización requiere HTTPS");
+                    return;
+                }
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
+            });
+            this._btn = btn;
+            return container;
         }
     });
-    map.addControl(new AuthorControl());
+    var locateCtrl = new LocateControl();
+    map.addControl(locateCtrl);
 
-    // CONTROL CAPAS (Se añade después para que quede debajo de la firma)
-    var baseMaps = { "🛰️ Satélite": pnoa, "🗺️ Mapa": osm };
-    var overlays = {
-        "<span class='layer-label'><span class='color-box' style='border: 3px solid #9932CC; background:none;'></span> Límites Municipales</span>": limites,
-        "🏘️ Poblaciones": poblaciones,
-        "<span class='layer-label'><span class='color-box' style='background:rgba(255,0,0,0.5)'></span> Faixa 50m</span>": faixa50m,
-        "<span class='layer-label'><span class='color-box' style='background:rgba(255,165,0,0.5)'></span> Núcleo rural</span>": nucleos,
-        "🏗️ Catastro (> Z14)": catastro
-    };
-    L.control.layers(baseMaps, overlays, { collapsed: true }).addTo(map);
+    map.on('locationfound', e => {
+        if(locateCtrl._btn) {
+             locateCtrl._btn.innerHTML = '<i class="fa-solid fa-check" style="color:#28a745;"></i>';
+             setTimeout(() => { locateCtrl._btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>'; }, 2000);
+        }
+        L.circle(e.latlng, { radius: e.accuracy, color: '#007bff', weight: 1, fillColor: '#007bff', fillOpacity: 0.15 })
+            .addTo(map)
+            .bindPopup("Precisión aprox: " + Math.round(e.accuracy) + "m");
+        L.circleMarker(e.latlng, {radius:6, color:'white', weight:3, fillColor:'#007bff', fillOpacity:1}).addTo(map);
+    });
+
+    map.on('locationerror', (e) => {
+        console.warn("No se pudo obtener la ubicación.", e);
+        if(locateCtrl._btn) locateCtrl._btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+    });
     
-    // Escala
-    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+    // --- ADMIN SEARCH LOGIC ---
+    const adminUrl = 'https://ideg.xunta.gal/servizos/rest/services/LimitesAdministrativos/LimitesAdministrativos/MapServer';
+    const LAYER_CONCELLOS = 12;
+    const LAYER_PARROQUIAS = 18;
+    const PARROQUIA_TARGET_ZOOM = 16;
 
-    // POPUP INFO
-    map.on('click', function(e) {
-        if(document.querySelector('.leaflet-control-measure-interaction')) return;
-        L.esri.identifyFeatures({ url: 'https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer' })
-        .on(map).at(e.latlng).layers('visible:1,2').run(function(error, featureCollection) {
-            if (featureCollection && featureCollection.features.length > 0) {
-                var content = '<div class="info-popup-header">Información</div><table class="info-popup-table">';
-                var props = featureCollection.features[0].properties;
-                for (var k in props) {
-                    if (k !== 'OBJECTID' && k !== 'Shape' && k !== 'pixel' && k!='Shape.area' && k!='Shape.len') 
-                        content += `<tr><td><b>${k}:</b></td><td>${props[k]}</td></tr>`;
+    const selProv = document.getElementById('selProvincia');
+    const selConc = document.getElementById('selConcello');
+    const selParr = document.getElementById('selParroquia');
+    
+    const searchToggle = document.getElementById('adminSearchToggle');
+    const searchPanel = document.getElementById('adminSearchPanel');
+    const searchConfirm = document.getElementById('adminSearchConfirm');
+
+    searchToggle.addEventListener('click', function() {
+        searchPanel.classList.add('active');
+        searchToggle.classList.add('hidden');
+    });
+
+    searchConfirm.addEventListener('click', function() {
+        searchPanel.classList.remove('active');
+        searchToggle.classList.remove('hidden');
+    });
+
+    const cont = document.querySelector('.admin-search-container');
+    L.DomEvent.disableClickPropagation(cont);
+    L.DomEvent.disableScrollPropagation(cont);
+
+    // 1. Load Provinces
+    L.esri.query({ url: adminUrl + '/' + LAYER_CONCELLOS })
+        .where("1=1")
+        .fields(['PROVINCIA', 'CODPROV'])
+        .returnGeometry(false)
+        .run((err, res) => {
+            selProv.innerHTML = '<option value="">Seleccionar...</option>';
+            if (err || !res || !res.features) {
+                selProv.innerHTML = '<option value="">Error carga</option>';
+                return;
+            }
+            const provMap = {};
+            res.features.forEach(f => {
+                const p = f.properties || f.attributes || {};
+                if (p.CODPROV != null && p.PROVINCIA) provMap[p.CODPROV] = p.PROVINCIA;
+            });
+            Object.keys(provMap).map(c => ({c, n: provMap[c]})).sort((a,b)=>a.n.localeCompare(b.n)).forEach(item => {
+                let opt = document.createElement('option'); opt.value = item.c; opt.textContent = item.n; selProv.add(opt);
+            });
+        });
+
+    // 2. Province -> Concello
+    selProv.addEventListener('change', function() {
+        const cod = this.value;
+        selConc.innerHTML = '<option value="">Cargando...</option>'; 
+        selParr.innerHTML = '<option value="">Seleccionar...</option>';
+        selConc.disabled = true; 
+        selParr.disabled = true;
+        if(!cod) { selConc.innerHTML='<option value="">Seleccionar...</option>'; return; }
+
+        L.esri.query({ url: adminUrl + '/' + LAYER_CONCELLOS })
+          .where('CODPROV=' + cod)
+          .run((e, r) => { if(r && r.features.length) map.fitBounds(L.geoJSON(r).getBounds()); });
+
+        L.esri.query({ url: adminUrl + '/' + LAYER_CONCELLOS })
+            .where('CODPROV=' + cod)
+            .fields(['CONCELLO', 'CODCONC', 'CODPROV'])
+            .returnGeometry(false)
+            .run((err, res) => {
+                selConc.innerHTML = '<option value="">Seleccionar...</option>';
+                if(!res || !res.features) return;
+                const list = res.features
+                  .map(f => f.properties || f.attributes)
+                  .sort((a,b) => a.CONCELLO.localeCompare(b.CONCELLO));
+                list.forEach(p => { 
+                    let opt = document.createElement('option'); 
+                    opt.value = p.CODCONC; 
+                    opt.textContent = p.CONCELLO; 
+                    selConc.add(opt); 
+                });
+                selConc.disabled = false;
+            });
+    });
+
+    // 3. Concello -> Parroquia
+    selConc.addEventListener('change', function() {
+        const cod = this.value;
+        selParr.innerHTML = '<option value="">Cargando...</option>'; 
+        selParr.disabled = true;
+        if(!cod) { selParr.innerHTML='<option value="">Seleccionar...</option>'; return; }
+
+        L.esri.query({ url: adminUrl + '/' + LAYER_CONCELLOS })
+          .where('CODCONC=' + cod)
+          .run((e, r) => { if(r && r.features.length) map.fitBounds(L.geoJSON(r).getBounds()); });
+
+        L.esri.query({ url: adminUrl + '/' + LAYER_PARROQUIAS })
+            .where('CODCONC=' + cod)
+            .fields(['PARROQUIA', 'CODPARRO'])
+            .returnGeometry(false)
+            .run((err, res) => {
+                selParr.innerHTML = '<option value="">Seleccionar...</option>';
+                if(!res || !res.features) return;
+                const list = res.features
+                  .map(f => f.properties || f.attributes)
+                  .sort((a,b) => a.PARROQUIA.localeCompare(b.PARROQUIA));
+                list.forEach(p => { 
+                    let opt = document.createElement('option'); 
+                    opt.value = p.CODPARRO; 
+                    opt.textContent = p.PARROQUIA; 
+                    selParr.add(opt); 
+                });
+                selParr.disabled = false;
+            });
+    });
+
+    // 4. Parroquia -> Zoom
+    selParr.addEventListener('change', function() {
+        const cod = this.value;
+        if(!cod) return;
+        L.esri.query({ url: adminUrl + '/' + LAYER_PARROQUIAS })
+          .where('CODPARRO=' + cod)
+          .run((e, r) => {
+            if(r && r.features.length) {
+                const b = L.geoJSON(r).getBounds();
+                map.fitBounds(b);
+                if(map.getZoom() < PARROQUIA_TARGET_ZOOM) {
+                    map.setView(b.getCenter(), PARROQUIA_TARGET_ZOOM);
                 }
-                content += '</table>';
-                L.popup().setLatLng(e.latlng).setContent(content).openOn(map);
             }
         });
     });
 
-    // GEOLOCALIZACIÓN
-    const btn = document.getElementById('btnLocateMain');
-    btn.addEventListener('click', function() {
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') return alert("Requiere HTTPS");
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: false });
+    // --- MEASUREMENT TOOLS ---
+    L.drawLocal = {
+        draw: {
+            toolbar: { 
+              actions: { title: 'Cancelar', text: 'Cancelar' }, 
+              finish: { title: 'Terminar', text: 'Terminar' }, 
+              undo: { title: 'Deshacer', text: 'Deshacer' }, 
+              buttons: { polyline: 'Medir distancia', polygon: 'Medir superficie' } 
+            },
+            handlers: { 
+              polyline: { tooltip: { start: 'Pincha para empezar', cont: 'Pincha para continuar', end: 'Pincha el último punto' } }, 
+              polygon: { tooltip: { start: 'Pincha para empezar', cont: 'Pincha para continuar', end: 'Pincha el primer punto' } }, 
+              simpleshape: { tooltip: { end: 'Suelta para terminar' } } 
+            }
+        }
+    };
+
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    var MeasureControl = L.Control.extend({
+        options: { position: 'topleft' },
+        onAdd: function(map) {
+            var container = L.DomUtil.create('div', 'measure-toolbar leaflet-bar');
+            
+            var btnLine = L.DomUtil.create('button', 'measure-btn', container);
+            btnLine.innerHTML = '<i class="fa-solid fa-ruler"></i>';
+            btnLine.title = "Medir Distancia";
+            btnLine.onclick = function() { 
+                clearMeasurement(); 
+                new L.Draw.Polyline(map, { shapeOptions: { color: '#f357a1', weight: 4 } }).enable(); 
+            };
+            
+            var btnPoly = L.DomUtil.create('button', 'measure-btn', container);
+            btnPoly.innerHTML = '<i class="fa-solid fa-draw-polygon"></i>';
+            btnPoly.title = "Medir Superficie";
+            btnPoly.onclick = function() { 
+                clearMeasurement(); 
+                new L.Draw.Polygon(map, { showArea: true, shapeOptions: { color: '#28a745', weight: 2 } }).enable(); 
+            };
+            return container;
+        }
     });
-    map.on('locationfound', e => {
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> OK';
-        setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Centrar', 2000);
+    map.addControl(new MeasureControl());
+
+    map.on(L.Draw.Event.CREATED, function (e) {
+        var type = e.layerType;
+        var layer = e.layer;
+        drawnItems.clearLayers();
+        drawnItems.addLayer(layer);
         
-        // Círculo de precisión SUTIL (Fix: opacidad baja para ver debajo)
-        L.circle(e.latlng, { 
-            radius: e.accuracy, 
-            color: '#007bff', 
-            weight: 1, 
-            fillColor: '#007bff', 
-            fillOpacity: 0.1 // Muy transparente
-        }).addTo(map).bindPopup("Precisión aprox: " + Math.round(e.accuracy) + "m");
+        var resultBox = document.getElementById('measureResult');
+        var titleDiv = document.getElementById('measureType');
+        var valueDiv = document.getElementById('measureValue');
         
-        // Marcador
-        L.circleMarker(e.latlng, {radius:6, color:'white', weight:2, fillColor:'#007bff', fillOpacity:1}).addTo(map);
-    });
-    map.on('locationerror', () => {
-        alert("No se pudo obtener la ubicación.");
-        btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Centrar';
+        if (type === 'polyline') {
+            var distance = 0; 
+            var latlngs = layer.getLatLngs();
+            for (var i = 0; i < latlngs.length - 1; i++) {
+                distance += latlngs[i].distanceTo(latlngs[i + 1]);
+            }
+            titleDiv.innerText = "DISTANCIA TOTAL"; 
+            valueDiv.innerText = distance > 1000 ? (distance / 1000).toFixed(2) + " km" : distance.toFixed(1) + " m";
+        } else if (type === 'polygon') {
+            var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+            titleDiv.innerText = "SUPERFICIE TOTAL"; 
+            valueDiv.innerText = area > 10000 ? (area / 10000).toFixed(2) + " ha" : area.toFixed(0) + " m²";
+        }
+        resultBox.style.display = 'block';
     });
 
-    // IA & CONTROLES FLOTANTES
-    var floatCtrl = L.Control.extend({ options: { position: 'bottomright' }, onAdd: function() {
-        var d = L.DomUtil.create('div');
-        d.innerHTML = '<a href="#" class="floating-btn ai-btn" onclick="toggleAI()"><i class="fa-solid fa-wand-magic-sparkles"></i></a>';
-        return d;
-    }});
+    window.clearMeasurement = function() {
+        drawnItems.clearLayers();
+        document.getElementById('measureResult').style.display = 'none';
+    };
+
+    // --- COORDINATES SYSTEM ---
+    proj4.defs("EPSG:25829","+proj=utm +zone=29 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+    map.on('mousemove', function(e) { updateCoords(e.latlng); });
+    // OPTIMIZACIÓN: updateCoords al terminar movimiento en vez de durante
+    map.on('moveend', function() { updateCoords(map.getCenter()); });
+    
+    function updateCoords(latlng) {
+        var utm = proj4("EPSG:4326", "EPSG:25829", [latlng.lng, latlng.lat]);
+        document.getElementById('geoCoords').innerText = `Lat: ${latlng.lat.toFixed(5)}  Lon: ${latlng.lng.toFixed(5)}`;
+        document.getElementById('utmCoords').innerText = `UTM 29T: ${utm[0].toFixed(0)} / ${utm[1].toFixed(0)}`;
+    }
+
+    // --- MAP LAYERS ---
+    
+    // Pane específico para etiquetas para que no interfieran con clics de capas inferiores
+    map.createPane('labelsPane');
+    map.getPane('labelsPane').style.zIndex = 650;
+    map.getPane('labelsPane').style.pointerEvents = 'none';
+
+    var pnoa = L.tileLayer.wms("https://www.ign.es/wms-inspire/pnoa-ma", { 
+        layers: "OI.OrthoimageCoverage", 
+        format: "image/jpeg", 
+        attribution: "PNOA", 
+        maxZoom: 20 
+    }).addTo(map);
+
+    var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "OSM" });
+
+    // --- SISTEMA DE ETIQUETADO UNIFICADO (SMART LABELING) ---
+
+    // 1. Límites Municipales (Líneas)
+    var limites_wms = L.tileLayer.wms("https://www.ign.es/wms-inspire/unidades-administrativas", { 
+        layers: 'AU.AdministrativeBoundary', 
+        format: 'image/png', 
+        transparent: true, 
+        zIndex: 1000
+    });
+
+    // 2. Etiquetas generales (Carto) para vista muy general (hasta Z8)
+    var lbl_general = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png', 
+        {
+            pane: 'labelsPane',
+            zIndex: 660,
+            opacity: 0.8,
+            attribution: '© OpenStreetMap © CARTO',
+            maxZoom: 8 // Se corta antes para dar protagonismo a concellos
+        }
+    );
+
+    // 3. Capa propia de etiquetas de CONCELLO (Custom Markers)
+    var concelloLabels = L.layerGroup().addTo(map);
+
+    function buildConcelloLabels() {
+        L.esri.query({ url: adminUrl + '/' + LAYER_CONCELLOS })
+            .where("1=1") // Traer todos
+            .fields(['CONCELLO'])
+            .returnGeometry(true)
+            .run((err, res) => {
+                if (err || !res || !res.features) return;
+
+                res.features.forEach(f => {
+                    var props = f.properties || f.attributes || {};
+                    var name = props.CONCELLO;
+                    
+                    // SEGURIDAD (ChatGPT idea): Check for name AND geometry
+                    if (!name || !f.geometry) return;
+
+                    try {
+                        // LOGICA (Gemini): Direct GeoJSON (esri-leaflet query runs return GeoJSON)
+                        // Evitamos arcgisToGeoJSON porque ya es GeoJSON y rompería la app
+                        var layer = L.geoJSON(f);
+                        var bounds = layer.getBounds();
+                        
+                        // SEGURIDAD (ChatGPT idea): Check bounds valid
+                        if (!bounds.isValid()) return;
+                        
+                        var center = bounds.getCenter();
+
+                        var marker = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'concello-label',
+                                html: name,
+                                iconSize: [120, 20],
+                                iconAnchor: [60, 10] // Centrado
+                            }),
+                            interactive: false,
+                            pane: 'labelsPane'
+                        });
+                        concelloLabels.addLayer(marker);
+                    } catch (e) {
+                        console.warn("Error creating label for:", name, e);
+                    }
+                });
+
+                // Ajustamos visibilidad según zoom una vez cargadas
+                updateConcelloLabelsVisibility();
+            });
+    }
+
+    // Mostrar nombres de concello solo en un rango razonable de zoom
+    function updateConcelloLabelsVisibility() {
+        var z = map.getZoom();
+        // Rango de visibilidad: Entre 7 y 12
+        if (z >= 7 && z <= 12) {
+            if (!map.hasLayer(concelloLabels)) map.addLayer(concelloLabels);
+        } else {
+            if (map.hasLayer(concelloLabels)) map.removeLayer(concelloLabels);
+        }
+    }
+    
+    // Iniciar carga de etiquetas y evento de zoom
+    buildConcelloLabels();
+    map.on('zoomend', updateConcelloLabelsVisibility);
+
+    // 4. Entidades de población (NucleoPoblacion) desde Z9
+    var lbl_aldeas = L.tileLayer.wms(
+        "https://www.ign.es/wms/cartociudad",
+        {
+            layers: "NucleoPoblacion", 
+            format: "image/png",
+            transparent: true,
+            attribution: "IGN",
+            pane: "labelsPane",
+            minZoom: 9, // nombres de poblaciones desde Z9 en adelante
+            zIndex: 650
+        }
+    );
+
+    // 5. Toponimia detallada (NGBE) desde Z13
+    var lbl_topografia = L.tileLayer.wms(
+        "https://www.ign.es/wms-inspire/ngbe",
+        {
+            layers: "GN.GeographicalNames", 
+            format: "image/png",
+            transparent: true,
+            attribution: "IGN - NGBE",
+            pane: "labelsPane",
+            minZoom: 13,
+            zIndex: 640
+        }
+    );
+
+    // Grupo combinado de etiquetas automáticas
+    var etiquetasSmart = L.layerGroup([lbl_general, lbl_aldeas, lbl_topografia]).addTo(map);
+
+    // Grupo de límites + nombres de concello personalizados
+    var grupoLimites = L.layerGroup([limites_wms, concelloLabels]).addTo(map);
+    
+    // --- REST OF LAYERS ---
+
+    var faixa50m = L.esri.dynamicMapLayer({ 
+        url: "https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer", 
+        layers: [2], 
+        opacity: 0.65, 
+        zIndex: 400 
+    }).addTo(map);
+
+    var nucleos = L.esri.dynamicMapLayer({ 
+        url: "https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer", 
+        layers: [1], 
+        opacity: 0.5, 
+        zIndex: 390 
+    }).addTo(map);
+
+    var catastro = L.tileLayer.wms("https://ovc.catastro.meh.es/cartografia/INSPIRE/spadgcwms.aspx", { 
+        layers: "CP.CadastralParcel", 
+        format: 'image/png', 
+        transparent: true, 
+        zIndex: 380, 
+        minZoom: 14 
+    }).addTo(map);
+
+    var wmsOpts = { 
+        format: 'image/png', 
+        transparent: true, 
+        attribution: "Xunta de Galicia", 
+        tiled: true 
+    };
+
+    var afecForestal = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/PBA/Afeccions_Forestal/MapServer/WMSServer", { ...wmsOpts, layers: '0,1,2,3', zIndex: 350 });
+    var afecAugas = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/PBA/Afeccions_Augas/MapServer/WMSServer", { ...wmsOpts, layers: '0', zIndex: 355 });
+    var afecPatrimonio = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/PBA/Afeccions_PatrimonioCultural/MapServer/WMSServer", { ...wmsOpts, layers: '0,1,2,3', zIndex: 360 });
+    var espazosNaturais = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/LugaresProtexidos/EspazosNaturaisConservacion/MapServer/WMSServer", { ...wmsOpts, zIndex: 345, layers: '0,1,2,3,4,5', opacity: 0.3 });
+    var biodiversidade = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/DistribucionEspecies/Biodiversidade/MapServer/WMSServer", { ...wmsOpts, zIndex: 346, layers: '0', opacity: 0.3 });
+    var afecMedioAmbiente = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/PBA/Afeccions_MedioAmbiente_CN/MapServer/WMSServer", { ...wmsOpts, layers: '0,1,2,3', zIndex: 347 });
+    
+    // CORRECCIÓN: Definir capas explícitas para Paisaje (ID 1 y 2, no 0,1,2,3)
+    var afecPaisaxe = L.tileLayer.wms("https://ideg.xunta.gal/servizos/services/PBA/Afeccions_Paisaxe_CP/MapServer/WMSServer", { 
+        ...wmsOpts, 
+        layers: '1,2', 
+        zIndex: 330 
+    });
+
+    function updateAfecLayersByZoom() {
+        var z = map.getZoom();
+        var aguasLayers = (z <= 11) ? '0' : (z <= 13 ? '0,1' : (z <= 15 ? '0,1,2' : '0,1,2,3'));
+        afecAugas.setParams({ layers: aguasLayers });
+        var bioLayers = (z <= 11) ? '0' : (z <= 13 ? '0,1' : (z <= 15 ? '0,1,2' : '0,1,2,3'));
+        biodiversidade.setParams({ layers: bioLayers });
+    }
+    map.on('zoomend', updateAfecLayersByZoom);
+    updateAfecLayersByZoom();
+
+    // Minimap
+    new L.Control.MiniMap(
+        new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), 
+        { toggleDisplay: true, minimized: false, position: 'bottomleft', width: 120, height: 120 }
+    ).addTo(map);
+
+    // Author Control
+    var AuthorControl = L.Control.extend({
+        options: { position: 'topright' }, 
+        onAdd: function(map) { 
+            var div = L.DomUtil.create('div', 'leaflet-control-author'); 
+            div.innerHTML = 'Creado por Efrén Santín'; 
+            return div; 
+        } 
+    });
+    map.addControl(new AuthorControl());
+
+    // Layer Control
+    var baseMaps = { "🛰️ Satélite": pnoa, "🗺️ Mapa": osm };
+    var overlays = {
+        "<span class='layer-label'><span class='color-box' style='border: 2px solid #FFD700; background:rgba(255,215,0,0.1);'></span> Límites y Nombres Concello</span>": grupoLimites,
+        "🔤 Etiquetas y Toponimia (Auto)": etiquetasSmart,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(255,0,0,0.5)'></span> Faixa 50m</span>": faixa50m,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(255,165,0,0.5)'></span> Núcleo rural</span>": nucleos,
+        "🏗️ Catastro (> Z14)": catastro,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(34,139,34,0.5)'></span> 🌲 Afecciones Forestales</span>": afecForestal,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(0,0,255,0.4)'></span> 💧 Afecciones Aguas</span>": afecAugas,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(128,0,128,0.5)'></span> 🏛️ Patrimonio Cultural</span>": afecPatrimonio,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(0,255,0,0.4)'></span> 🌿 Espacios Naturales</span>": espazosNaturais,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(255,255,0,0.4)'></span> 🦎 Biodiversidad</span>": biodiversidade,
+        "<span class='layer-label'><span class='color-box' style='background:rgba(255,165,0,0.4)'></span> 🌄 Paisaje</span>": afecPaisaxe
+    };
+    L.control.layers(baseMaps, overlays, { collapsed: true }).addTo(map);
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+    // --- IDENTIFY & POPUP LOGIC ---
+    const identifyMap = [
+        { layer: afecAugas, url: 'https://ideg.xunta.gal/servizos/rest/services/PBA/Afeccions_Augas/MapServer', title: 'Policía de Canles', layers: 'all' },
+        { 
+            layer: afecForestal, 
+            url: 'https://ideg.xunta.gal/servizos/rest/services/PBA/Afeccions_Forestal/MapServer', 
+            title: 'Afecciones Forestales',
+            blackList: ['OBJECTID_1', 'IDMONTE', 'CODIGOPROV', 'CODIGOINEC', 'IDPERTENZA', 'IDDISTRITO', 'NOMEDISTRI', 'SHAPE.LEN', 'SHAPE_LENG', 'AREA_HA']
+        },
+        { 
+            layer: afecPatrimonio, 
+            url: 'https://ideg.xunta.gal/servizos/rest/services/PBA/Afeccions_PatrimonioCultural/MapServer', 
+            title: 'Patrimonio Cultural',
+            tolerance: 20, 
+            whiteList: ['PROVINCIA', 'CONCELLO', 'NOME', 'NOMBRE', 'PARROQUIA', 'LUGAR', 'TIPOLOXIA', 'TIPOLOGIA', 'INTERESE', 'INTERES']
+        },
+        { layer: afecPaisaxe, url: 'https://ideg.xunta.gal/servizos/rest/services/PBA/Afeccions_Paisaxe_CP/MapServer', title: 'Paisaje', layers: 'all' },
+        { layer: afecMedioAmbiente, url: 'https://ideg.xunta.gal/servizos/rest/services/PBA/Afeccions_MedioAmbiente_CN/MapServer', title: 'Medio Ambiente' },
+        { 
+            layer: espazosNaturais, 
+            url: 'https://ideg.xunta.gal/servizos/rest/services/LugaresProtexidos/EspazosNaturaisConservacion/MapServer', 
+            title: 'Espacios Naturales',
+            blackList: ['OBJECTID_1', 'SHAPE_LENG', 'SHAPE.LEN', 'AREA_HA', 'SHAPE.AREA']
+        },
+        { 
+            layer: biodiversidade, 
+            url: 'https://ideg.xunta.gal/servizos/rest/services/DistribucionEspecies/Biodiversidade/MapServer', 
+            title: 'Biodiversidad',
+            tolerance: 25, 
+            blackList: ['OBJECTID', 'SHAPE', 'Shape', 'X', 'Y'] 
+        }
+    ];
+
+    function formatFeatureInfo(props, blackListOverride, whiteListOverride, seenLabels) {
+        const globalBlackList = [
+            'OBJECTID', 'SHAPE', 'Shape', 'SHAPE_Length', 'Shape_Length', 'SHAPE_Area', 'Shape_Area', 'FID', 'GLOBALID', 'GlobalID',
+            'CREATED_USER', 'CREATED_DATE', 'LAST_EDITED_USER', 'LAST_EDITED_DATE', 'GDB_GEOMATTR_DATA', 'X', 'Y', 'POINT_X', 'POINT_Y',
+            'cla_homo', 'cat_homo', 'SHAPE.AREA', 'SHAPE.LEN', 'CODINE', 'IDDOC', 'LEY', 'CLA_LEY', 'CAT_LEY', 'CODPROV', 'CODIGOINE', 
+            'GRUPO', 'SOLICI_ADHESION', 'AREA', 'LEN', 'Id'
+        ];
+        
+        let html = '<table class="info-popup-table">';
+        let hasData = false;
+        if (!seenLabels) seenLabels = new Set();
+        
+        for (let key in props) {
+            let upperKey = key.toUpperCase();
+            if (globalBlackList.includes(key) || key.startsWith('COD_')) continue;
+            if (blackListOverride && blackListOverride.some(k => k.toUpperCase() === upperKey)) continue;
+            if (whiteListOverride && whiteListOverride.length > 0) {
+                if (!whiteListOverride.some(k => k.toUpperCase() === upperKey)) continue;
+            }
+            
+            let val = props[key];
+            if (val !== null && val !== undefined && String(val).trim() !== '' && String(val) !== 'Null') {
+                let label = key.replace(/_/g, ' ').toLowerCase();
+                label = label.charAt(0).toUpperCase() + label.slice(1);
+                
+                if (seenLabels.has(label.toLowerCase())) continue;
+                seenLabels.add(label.toLowerCase());
+
+                if (String(val).length > 50) val = String(val).substring(0, 47) + '...';
+                html += `<tr><td>${label}:</td><td>${val}</td></tr>`;
+                hasData = true;
+            }
+        }
+        html += '</table>';
+        return hasData ? html : '';
+    }
+
+    map.on('click', function(e) {
+        if (document.querySelector('.leaflet-draw-tooltip')) return;
+        var lat = e.latlng.lat.toFixed(6); 
+        var lng = e.latlng.lng.toFixed(6);
+        var popupContentDiv = document.createElement('div');
+        popupContentDiv.style.minWidth = '220px';
+        popupContentDiv.innerHTML = 
+          `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" class="gmaps-link">
+              <i class="fa-solid fa-location-arrow"></i> Navegar (Google Maps)
+           </a>
+           <div id="popup-loading" class="loading-indicator"><i class="fa-solid fa-spinner fa-spin"></i> Analizando parcelas...</div>
+           <div id="popup-results"></div>`;
+
+        L.popup({ maxWidth: 300, maxHeight: 400 })
+          .setLatLng(e.latlng)
+          .setContent(popupContentDiv)
+          .openOn(map);
+
+        var resultsContainer = popupContentDiv.querySelector('#popup-results');
+        var loadingIndicator = popupContentDiv.querySelector('#popup-loading');
+        var pendingRequests = 0;
+
+        function appendContent(html) { 
+            if (html) { 
+                var div = document.createElement('div'); 
+                div.innerHTML = html; 
+                resultsContainer.appendChild(div); 
+            } 
+        }
+        function checkLoading() { 
+            pendingRequests--; 
+            if (pendingRequests <= 0 && loadingIndicator) loadingIndicator.style.display = 'none'; 
+        }
+
+        var layersToQuery = [];
+        if (map.hasLayer(nucleos)) layersToQuery.push(1);
+        if (map.hasLayer(faixa50m)) layersToQuery.push(2);
+
+        if (layersToQuery.length > 0) {
+            pendingRequests++;
+            L.esri.identifyFeatures({ 
+                url: 'https://ideg.xunta.gal/servizos-c08/rest/services/VISFPI/FaixasProteccionIncendios/MapServer' 
+            })
+            .on(map)
+            .at(e.latlng)
+            .layers('visible:' + layersToQuery.join(','))
+            .run(function(error, featureCollection) {
+                if (featureCollection && featureCollection.features.length > 0) {
+                    let html = '<div class="info-popup-header">Información Parcela</div>';
+                    let seenLabels = new Set();
+                    featureCollection.features.forEach(f => {
+                       var props = f.properties;
+                       let table = '<table class="info-popup-table">';
+                       const specialFields = { 
+                         'CONCELLO': 'Concello', 
+                         'PARROQUIA': 'Parroquia', 
+                         'LUGAR': 'Lugar', 
+                         'REFERENCIA': 'Ref. Catastral', 
+                         'REFCAT': 'Ref. Catastral' 
+                       };
+                       for(let k in props) {
+                           if(['OBJECTID','SHAPE','Shape_Area','Shape_Length'].includes(k)) continue;
+                           let val = props[k];
+                           if(!val) continue;
+                           if(k === 'REFERENCIA' || k === 'REFCAT') {
+                               let ref = String(val).replace(/\s+/g, '');
+                               let url = `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${ref.substring(0,7)}&rc2=${ref.substring(7,14)}`;
+                               val = `<a href="${url}" target="_blank" style="color:#007bff; text-decoration:none;">${ref} <i class="fa-solid fa-external-link-alt" style="font-size:10px;"></i></a>`;
+                               window.lastRefCat = url;
+                           }
+                           let lbl = specialFields[k] || k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
+                           if (seenLabels.has(lbl.toLowerCase())) continue;
+                           seenLabels.add(lbl.toLowerCase());
+                           table += `<tr><td>${lbl}:</td><td>${val}</td></tr>`;
+                       }
+                       table += '</table>'; 
+                       html += table;
+                    });
+                    appendContent(html);
+                }
+                checkLoading();
+            });
+        }
+
+        identifyMap.forEach(item => {
+            if (map.hasLayer(item.layer)) {
+                pendingRequests++;
+                var ident = L.esri.identifyFeatures({ url: item.url })
+                              .on(map)
+                              .at(e.latlng);
+                if (item.layers === 'all') ident.layers('all'); 
+                if (item.tolerance) ident.tolerance(item.tolerance);
+                ident.run(function(error, featureCollection) {
+                    if (featureCollection && featureCollection.features.length > 0) {
+                        let innerHtml = '';
+                        let seenLabels = new Set();
+                        featureCollection.features.forEach(f => {
+                            innerHtml += formatFeatureInfo(
+                                f.properties, 
+                                item.blackList, 
+                                item.whiteList, 
+                                seenLabels
+                            );
+                        });
+                        if (innerHtml) {
+                            appendContent(
+                              `<div class="info-popup-header" style="border-color:#28a745; color:#28a745; margin-top:8px;">
+                                   ${item.title}
+                               </div>` + innerHtml
+                            );
+                        }
+                    }
+                    checkLoading();
+                });
+            }
+        });
+
+        if (map.hasLayer(catastro) && map.getZoom() >= 14) {
+            var point = map.latLngToContainerPoint(e.latlng, map.getZoom());
+            var size = map.getSize();
+            var wmsUrl = 
+              `https://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetFeatureInfo` +
+              `&SRS=EPSG:4326&BBOX=${map.getBounds().toBBoxString()}` +
+              `&WIDTH=${size.x}&HEIGHT=${size.y}&LAYERS=Catastro&QUERY_LAYERS=Catastro` +
+              `&INFO_FORMAT=text/html&X=${Math.round(point.x)}&Y=${Math.round(point.y)}`;
+
+            var linkUrl = window.lastRefCat || wmsUrl; 
+            window.lastRefCat = null;
+
+            appendContent(
+              `<div class="info-popup-header" style="color:#d35400; border-color:#d35400; margin-top:10px;">
+                  Ficha Catastral
+               </div>
+               <div style="position:relative; width:100%; height:140px; border:1px solid #eee; border-radius:4px; overflow:hidden;">
+                   <iframe src="${wmsUrl}" style="width:100%; height:100%; border:none;"></iframe>
+                   <a href="${linkUrl}" target="_blank" 
+                      style="position:absolute; top:0; left:0; width:100%; height:100%; background:transparent;"></a>
+               </div>`
+            );
+        }
+        
+        if (pendingRequests === 0 && loadingIndicator) loadingIndicator.style.display = 'none';
+    });
+
+    // --- AI INTEGRATION ---
+    var floatCtrl = L.Control.extend({ 
+        options: { position: 'bottomright' }, 
+        onAdd: function() { 
+            var d = L.DomUtil.create('div'); 
+            d.innerHTML = '<a href="#" class="floating-btn ai-btn" onclick="toggleAI()"><i class="fa-solid fa-wand-magic-sparkles"></i></a>'; 
+            return d; 
+        } 
+    });
     map.addControl(new floatCtrl());
 
-    const apiKey = ""; // INYECTADA POR ENTORNO
-    function toggleAI() { document.getElementById('aiModal').style.display = document.getElementById('aiModal').style.display==='flex'?'none':'flex'; }
-    function askPreset(t) { document.getElementById('userQuery').value=t; callGemini(); }
-    function handleEnter(e) { if(e.key==='Enter') callGemini(); }
+    function toggleAI() { 
+        var modal = document.getElementById('aiModal'); 
+        modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex'; 
+        if(modal.style.display === 'flex') document.getElementById('userQuery').focus();
+    }
     
+    function askPreset(t) { 
+        document.getElementById('userQuery').value = t; 
+        callGemini(); 
+    }
+    
+    function handleEnter(e) { 
+        if(e.key === 'Enter') callGemini(); 
+    }
+    
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     async function callGemini() {
-        const q = document.getElementById('userQuery').value;
+        if(isGenerating) return;
+        const qInput = document.getElementById('userQuery');
+        const q = qInput.value.trim(); 
         if(!q) return;
-        const chat = document.getElementById('chatContainer');
-        chat.innerHTML += `<div class="message msg-user">${q}</div>`;
-        document.getElementById('userQuery').value = '';
+
+        const chat = document.getElementById('chatContainer'); 
+        const sendBtn = document.getElementById('sendBtn');
         
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ contents: [{ parts: [{ text: "Eres experto forestal Galicia (Ley 3/2007). Responde brevemente: " + q }] }] })
-            });
-            const data = await res.json();
-            chat.innerHTML += `<div class="message msg-ai">${data.candidates[0].content.parts[0].text}</div>`;
-            chat.scrollTop = chat.scrollHeight;
-        } catch(e) { chat.innerHTML += `<div class="message msg-ai">Error de conexión.</div>`; }
+        isGenerating = true;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        chat.innerHTML += `<div class="message msg-user">${q}</div>`; 
+        qInput.value = '';
+        chat.scrollTop = chat.scrollHeight;
+
+        const systemPrompt = "Eres un experto forestal en Galicia. Conoces la Ley 3/2007 de prevención de incendios forestales de Galicia. Responde de forma breve y concisa, orientada a propietarios de terrenos.";
+        const model = "gemini-2.5-flash-preview-09-2025";
+        
+        const delays = [1000, 2000, 4000, 8000, 16000];
+        let attempt = 0;
+        let success = false;
+        let responseText = "No se pudo obtener respuesta.";
+
+        while (attempt < 5 && !success) {
+            try {
+                const res = await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, 
+                  { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: q }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    }) 
+                  }
+                );
+                
+                if (!res.ok) {
+                    if (res.status === 429 || res.status >= 500) {
+                        throw new Error(`Server error ${res.status}`);
+                    }
+                     const errData = await res.json();
+                     responseText = "Error: " + (errData.error?.message || "Solicitud inválida.");
+                     break; 
+                }
+
+                const data = await res.json();
+                responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No entendí la pregunta.";
+                success = true;
+
+            } catch(e) {
+                console.warn(`Intento ${attempt + 1} fallido:`, e);
+                attempt++;
+                if (attempt < 5) await wait(delays[attempt - 1]);
+                else responseText = "El servicio no está disponible en este momento. Inténtelo más tarde.";
+            }
+        }
+
+        responseText = responseText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+        chat.innerHTML += `<div class="message msg-ai">${responseText}</div>`; 
+        chat.scrollTop = chat.scrollHeight;
+        
+        isGenerating = false;
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
     }
   </script>
 </body>
